@@ -131,12 +131,16 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics // Solo Android
 class MyAppLoggerConfig : LoggerConfig {
     override val enableNapier: Boolean = true
 
-    override val enableCrashlytics: Boolean = true
+    // Solo habilita Crashlytics si Firebase está disponible
+    override val enableCrashlytics: Boolean = false  // Cambia a true cuando tengas Firebase inicializado
 
+    // Proporciona la instancia solo si vas a usar Crashlytics
     override val crashlytics: Any? = try {
-        FirebaseCrashlytics.getInstance() // Android
+        // Descomenta esto cuando tengas Firebase inicializado:
+        // FirebaseCrashlytics.getInstance()
+        null
     } catch (e: Exception) {
-        null // iOS o Firebase no inicializado
+        null
     }
 
     override val minLogLevel: LogLevel = if (BuildConfig.DEBUG) {
@@ -336,6 +340,32 @@ App → LoggingRepository → LoggingRepositoryImpl → [Writers]
 3. **Enable/Disable**: Cada writer puede estar habilitado/deshabilitado
 
 ## Troubleshooting
+
+### NoClassDefFoundError: FirebaseCrashlytics
+
+**Causa**: Tienes `enableCrashlytics = true` pero Firebase Crashlytics no está en tu classpath o no está inicializado.
+
+**Solución**:
+
+**Opción 1** - Deshabilitar Crashlytics (si no lo necesitas):
+```kotlin
+class MyAppLoggerConfig : LoggerConfig {
+    override val enableCrashlytics: Boolean = false  // ← Cambia a false
+    override val crashlytics: Any? = null
+}
+```
+
+**Opción 2** - Habilitar Firebase correctamente:
+1. Agrega Firebase a tu app (ver sección "Inicializar Firebase")
+2. Asegúrate de inicializar Firebase ANTES de Koin
+3. Proporciona la instancia en tu config:
+
+```kotlin
+class MyAppLoggerConfig : LoggerConfig {
+    override val enableCrashlytics: Boolean = true
+    override val crashlytics: Any? = FirebaseCrashlytics.getInstance()
+}
+```
 
 ### "CrashlyticsLogWriter está habilitado pero no se proporcionó una instancia válida"
 

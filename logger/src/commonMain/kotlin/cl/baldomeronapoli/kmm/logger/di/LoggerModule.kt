@@ -39,23 +39,29 @@ val loggerModule = module {
         NapierLogWriter(isEnabled = config.enableNapier)
     }
 
-    single<CrashlyticsLogWriter> {
-        val config = get<LoggerConfig>()
-        CrashlyticsLogWriter(
-            crashlyticsInstance = config.crashlytics,
-            isEnabled = config.enableCrashlytics,
-            minLevel = config.crashlyticsMinLevel
-        )
-    }
-
     // LoggingRepository - implementación principal
     single<LoggingRepository> {
         val config = get<LoggerConfig>()
         val napierWriter = get<LogWriter>()
-        val crashlyticsWriter = get<CrashlyticsLogWriter>()
+
+        // Lista de writers - solo agregamos los que están habilitados
+        val writers = buildList {
+            add(napierWriter)
+
+            // Solo crear CrashlyticsLogWriter si está habilitado
+            if (config.enableCrashlytics) {
+                add(
+                    CrashlyticsLogWriter(
+                        crashlyticsInstance = config.crashlytics,
+                        isEnabled = true,
+                        minLevel = config.crashlyticsMinLevel
+                    )
+                )
+            }
+        }
 
         LoggingRepositoryImpl(
-            writers = listOf(napierWriter, crashlyticsWriter),
+            writers = writers,
             minLogLevel = config.minLogLevel
         )
     }
