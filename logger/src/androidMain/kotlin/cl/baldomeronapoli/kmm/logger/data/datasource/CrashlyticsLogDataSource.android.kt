@@ -1,16 +1,16 @@
-package cl.baldomeronapoli.kmm.logger.writer
+package cl.baldomeronapoli.kmm.logger.data.datasource
 
-import cl.baldomeronapoli.kmm.logger.config.LogLevel
+import cl.baldomeronapoli.kmm.logger.domain.model.LogLevel
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 /**
- * Implementación Android del writer de Crashlytics.
+ * Implementación Android del datasource de Crashlytics.
  */
-actual class CrashlyticsLogWriter actual constructor(
+actual class CrashlyticsLogDataSource actual constructor(
     crashlyticsInstance: Any?,
     isEnabled: Boolean,
     private val minLevel: LogLevel
-) : LogWriter {
+) : LogDataSource {
 
     actual override val isEnabled: Boolean = isEnabled
     private val crashlytics: FirebaseCrashlytics? = crashlyticsInstance as? FirebaseCrashlytics
@@ -18,7 +18,7 @@ actual class CrashlyticsLogWriter actual constructor(
     init {
         if (isEnabled && crashlytics == null) {
             throw IllegalStateException(
-                "CrashlyticsLogWriter está habilitado pero no se proporcionó una instancia válida de FirebaseCrashlytics. " +
+                "CrashlyticsLogDataSource está habilitado pero no se proporcionó una instancia válida de FirebaseCrashlytics. " +
                         "Asegúrate de inicializar Firebase en tu app y pasar FirebaseCrashlytics.getInstance() en LoggerConfig."
             )
         }

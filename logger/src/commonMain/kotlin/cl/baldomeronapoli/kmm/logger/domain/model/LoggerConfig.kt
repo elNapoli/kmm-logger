@@ -1,4 +1,6 @@
-package cl.baldomeronapoli.kmm.logger.config
+package cl.baldomeronapoli.kmm.logger.domain.model
+
+import cl.baldomeronapoli.kmm.logger.domain.model.LogLevel
 
 /**
  * Configuración para el sistema de logging.

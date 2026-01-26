@@ -1,22 +1,22 @@
-package cl.baldomeronapoli.kmm.logger.writer
+package cl.baldomeronapoli.kmm.logger.data.datasource
 
-import cl.baldomeronapoli.kmm.logger.config.LogLevel
+import cl.baldomeronapoli.kmm.logger.domain.model.LogLevel
 
 /**
- * Implementación iOS del writer de Crashlytics.
+ * Implementación iOS del datasource de Crashlytics.
  * TODO: Implementar integración con Firebase Crashlytics iOS SDK.
  */
-actual class CrashlyticsLogWriter actual constructor(
+actual class CrashlyticsLogDataSource actual constructor(
     crashlyticsInstance: Any?,
     isEnabled: Boolean,
     private val minLevel: LogLevel
-) : LogWriter {
+) : LogDataSource {
 
     actual override val isEnabled: Boolean = isEnabled
 
     init {
         if (isEnabled) {
-            println("⚠️ CrashlyticsLogWriter iOS: Implementación pendiente. Los logs no se enviarán a Crashlytics.")
+            println("⚠️ CrashlyticsLogDataSource iOS: Implementación pendiente. Los logs no se enviarán a Crashlytics.")
         }
     }
 

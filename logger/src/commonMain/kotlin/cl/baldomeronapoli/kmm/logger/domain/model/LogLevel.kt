@@ -1,4 +1,4 @@
-package cl.baldomeronapoli.kmm.logger.config
+package cl.baldomeronapoli.kmm.logger.domain.model
 
 /**
  * Niveles de severidad para logging.

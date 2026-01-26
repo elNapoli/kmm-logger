@@ -1,23 +1,23 @@
-package cl.baldomeronapoli.kmm.logger
+package cl.baldomeronapoli.kmm.logger.data.repository
 
-import cl.baldomeronapoli.kmm.base.domain.repositories.LoggingRepository
-import cl.baldomeronapoli.kmm.logger.config.LogLevel
-import cl.baldomeronapoli.kmm.logger.writer.LogWriter
+import cl.baldomeronapoli.kmm.base.domain.repository.LoggingRepository
+import cl.baldomeronapoli.kmm.logger.data.datasource.LogDataSource
+import cl.baldomeronapoli.kmm.logger.domain.model.LogLevel
 
 /**
- * Implementación del repositorio de logging.
- * Coordina múltiples writers (Napier, Crashlytics, etc.) para enviar logs a diferentes destinos.
+ * Implementación del repositorio de logging siguiendo Clean Architecture.
+ * Coordina múltiples datasources (Napier, Crashlytics, etc.) para enviar logs a diferentes destinos.
  *
- * @param writers Lista de writers configurados
+ * @param dataSources Lista de datasources configurados
  * @param minLogLevel Nivel mínimo global de logging
  */
 class LoggingRepositoryImpl(
-    private val writers: List<LogWriter>,
+    private val dataSources: List<LogDataSource>,
     private val minLogLevel: LogLevel
 ) : LoggingRepository {
 
     /**
-     * Loggea una excepción a todos los writers habilitados.
+     * Loggea una excepción a todos los datasources habilitados.
      * Usado automáticamente por ExceptionHandler en UseCases.
      */
     override suspend fun logException(throwable: Throwable) {
@@ -47,14 +47,14 @@ class LoggingRepositoryImpl(
         // Verificar si debe loggearse según el nivel mínimo
         if (!level.shouldLog(minLogLevel)) return
 
-        // Enviar a todos los writers habilitados
-        writers.forEach { writer ->
-            if (writer.isEnabled) {
+        // Enviar a todos los datasources habilitados
+        dataSources.forEach { dataSource ->
+            if (dataSource.isEnabled) {
                 try {
-                    writer.log(level, tag, message, throwable)
+                    dataSource.log(level, tag, message, throwable)
                 } catch (e: Exception) {
-                    // Si un writer falla, no queremos detener los demás
-                    println("Error en writer ${writer::class.simpleName}: ${e.message}")
+                    // Si un datasource falla, no queremos detener los demás
+                    println("Error en datasource ${dataSource::class.simpleName}: ${e.message}")
                 }
             }
         }
@@ -68,6 +68,7 @@ class LoggingRepositoryImpl(
     fun w(tag: String, message: String) = log(LogLevel.WARN, tag, message)
     fun e(tag: String, message: String, throwable: Throwable? = null) =
         log(LogLevel.ERROR, tag, message, throwable)
+
     fun wtf(tag: String, message: String, throwable: Throwable? = null) =
         log(LogLevel.FATAL, tag, message, throwable)
 }
