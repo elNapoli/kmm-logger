@@ -1,7 +1,7 @@
 package cl.baldomeronapoli.kmm.logger.data.datasource
 
 import cl.baldomeronapoli.kmm.logger.domain.model.LogLevel
-import io.github.aakira.napier.DebugAntilog
+import cl.baldomeronapoli.kmm.logger.utils.createNapierAntilog
 import io.github.aakira.napier.Napier
 
 /**
@@ -21,11 +21,12 @@ class NapoliLogDataSource(
         /**
          * Inicializa Napier automáticamente si aún no lo está.
          * Esto encapsula Napier como detalle de implementación.
+         * Usa el Antilog apropiado para cada plataforma (DebugAntilog en Android, NSLog en iOS).
          */
         private fun ensureNapierInitialized() {
             if (!isNapoliInitialized) {
                 try {
-                    Napier.base(DebugAntilog())
+                    Napier.base(createNapierAntilog())
                     isNapoliInitialized = true
                 } catch (e: Exception) {
                     // Napier ya está inicializado externamente, o error

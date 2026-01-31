@@ -21,6 +21,7 @@ interface LoggerConfig {
      */
     val enableNapoliLogger: Boolean get() = true
 
+
     /**
      * Habilitar logging a Firebase Crashlytics (crash reporting).
      * Requiere que la app haya inicializado Firebase.
