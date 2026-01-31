@@ -1,6 +1,7 @@
 package cl.baldomeronapoli.kmm.logger.data.datasource.device
 
-import cl.baldomeronapoli.kmm.base.domain.models.UserAgent
+import cl.baldomeronapoli.kmm.logger.domain.model.UserAgent
+
 
 /**
  * Multiplatform data source for UserAgent information.

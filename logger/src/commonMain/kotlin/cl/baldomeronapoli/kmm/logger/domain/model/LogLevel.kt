@@ -6,6 +6,12 @@ package cl.baldomeronapoli.kmm.logger.domain.model
  */
 enum class LogLevel(val priority: Int) {
     /**
+     * Información muy detallada, más granular que DEBUG.
+     * Solo para debugging profundo en desarrollo.
+     */
+    VERBOSE(0),
+
+    /**
      * Información detallada para debugging.
      * Solo debería usarse en desarrollo.
      */

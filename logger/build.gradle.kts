@@ -41,9 +41,9 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.koin.core)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.napier)
 
-            // Napoli Base (includes Napier as API)
-            implementation(libs.napoli.kmm.base)
         }
 
         androidMain.dependencies {

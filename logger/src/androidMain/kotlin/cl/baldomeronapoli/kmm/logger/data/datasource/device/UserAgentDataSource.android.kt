@@ -2,7 +2,7 @@ package cl.baldomeronapoli.kmm.logger.data.datasource.device
 
 import android.content.Context
 import android.os.Build
-import cl.baldomeronapoli.kmm.base.domain.models.UserAgent
+import cl.baldomeronapoli.kmm.logger.domain.model.UserAgent
 
 private const val OS = "os"
 private const val OS_VERSION = "os_version"

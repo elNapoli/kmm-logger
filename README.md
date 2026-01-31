@@ -1,26 +1,52 @@
-# napoli-kmm-logger
+# Trace Logger 🔍
 
-Librería de logging modular y escalable para Kotlin Multiplatform (Android & iOS) con soporte para múltiples destinos de logs.
+**Versión 1.0.0**
 
-## Características
+Librería de logging simple y poderosa para Kotlin Multiplatform (KMM) con tags automáticos y soporte multi-destino.
 
-- **Multi-destino**: Soporte para Napier (consola) y Firebase Crashlytics
-- **Configurable**: Habilita/deshabilita destinos individualmente
-- **Niveles de log**: DEBUG, INFO, WARN, ERROR, FATAL con filtrado configurable
-- **Auto-logging**: Captura automática de excepciones desde `ExceptionHandler` (UseCases)
-- **Manual logging**: Métodos de conveniencia (`d()`, `i()`, `w()`, `e()`, `wtf()`)
-- **Integración con base**: Implementa `LoggingRepository` de `napoli-kmm-base`
-- **Koin DI**: Inyección de dependencias lista para usar
-- **Feature-based**: Integración con `FeatureManager` de base
+```kotlin
+// Así de simple
+Trace.i("Usuario inició sesión exitosamente")
+Trace.e("Error al procesar pago", exception)
+Trace.crash(exception)
+```
 
-## Requisitos
+---
 
-- Kotlin Multiplatform 2.0+
-- [napoli-kmm-base](https://github.com/elNapoli/napoli-kmm-base) - Contiene la interfaz `LoggingRepository` y exporta Napier como API
-- Koin 4.0+
-- Firebase Crashlytics (opcional, solo si quieres usar Crashlytics)
+## ¿Qué es KMM?
 
-## Instalación
+**Kotlin Multiplatform Mobile (KMM)** es una tecnología de JetBrains que permite compartir código entre Android e iOS usando Kotlin. Con KMM puedes escribir la lógica de negocio una sola vez y usarla en ambas plataformas, reduciendo duplicación y manteniendo consistencia.
+
+Esta librería está diseñada para funcionar en **Android** e **iOS** sin cambios en tu código.
+
+---
+
+## ✨ Características
+
+- **🎯 Tags automáticos**: No necesitas especificar el tag, se genera automáticamente como `Archivo.kt:123`
+- **📱 Multiplataforma**: Funciona en Android e iOS sin configuración adicional
+- **🎚️ Múltiples niveles**: v, d, i, w, e, wtf, crash
+- **🔌 Multi-destino**: Logs a consola (Napier) y Firebase Crashlytics
+- **⚡ No bloqueante**: Todos los logs se ejecutan en coroutines
+- **🎛️ Configurable**: Filtra por nivel mínimo, habilita/deshabilita destinos
+- **🧩 Koin ready**: Integración lista con Koin DI
+
+---
+
+## 📋 Requisitos
+
+- **Kotlin**: 2.0+
+- **Koin**: 4.0+
+- **kotlinx-coroutines**: 1.8+
+- **Android**: minSdk 24
+- **iOS**: iOS 13+
+
+### Dependencias opcionales
+- **Firebase Crashlytics**: Solo si quieres enviar logs a Crashlytics
+
+---
+
+## 📦 Instalación
 
 ### 1. Agregar el repositorio
 
@@ -30,9 +56,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        mavenLocal() // Si publicas localmente
+        mavenLocal() // Si lo publicas localmente
+
+        // O desde GitHub Packages
         maven {
-            url = uri("https://github.com/elNapoli/kmm-logger")
+            url = uri("https://maven.pkg.github.com/elNapoli/napoli-kmm-logger")
             credentials {
                 username = System.getenv("GITHUB_USERNAME")
                 password = System.getenv("GITHUB_TOKEN")
@@ -47,65 +75,91 @@ dependencyResolutionManagement {
 ```kotlin
 // gradle/libs.versions.toml
 [versions]
-napoli-kmm-logger = "1.0.0" # Usa la última versión
+trace-logger = "1.0.0"
 
 [libraries]
-napoli-kmm-logger = { module = "cl.baldomeronapoli.kmm:logger", version.ref = "napoli-kmm-logger" }
+trace-logger = { module = "cl.baldomeronapoli.kmm:logger", version.ref = "trace-logger" }
 ```
 
 ```kotlin
-// composeApp/build.gradle.kts (o tu módulo principal)
+// composeApp/build.gradle.kts (o tu módulo shared)
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.napoli.kmm.base)    // Requerido
-            implementation(libs.napoli.kmm.logger)
-        }
-
-        androidMain.dependencies {
-            // Solo si vas a usar Crashlytics en Android
-            implementation(libs.firebase.crashlytics)
+            implementation(libs.trace.logger)
         }
     }
 }
 ```
 
-### 3. Inicializar Firebase (Opcional - solo si usas Crashlytics)
+---
 
-**La librería NO inicializa Firebase. Tu aplicación debe hacerlo.**
+## ⚙️ Configuración
+
+### 1. Crear tu LoggerConfig
+
+Crea una clase que implemente `LoggerConfig`:
+
+```kotlin
+import cl.baldomeronapoli.kmm.logger.domain.model.LoggerConfig
+import cl.baldomeronapoli.kmm.logger.domain.model.LogLevel
+
+class MyAppLoggerConfig : LoggerConfig {
+    override val enableNapier: Boolean = true
+    override val enableCrashlytics: Boolean = false
+    override val crashlytics: Any? = null
+
+    override val minLogLevel: LogLevel = LogLevel.DEBUG
+    override val crashlyticsMinLevel: LogLevel = LogLevel.ERROR
+}
+```
+
+### 2. Configurar Koin
+
+Inicializa Koin con el módulo de logger:
+
+```kotlin
+import cl.baldomeronapoli.kmm.logger.di.LoggerModule
+import cl.baldomeronapoli.kmm.logger.domain.model.LoggerConfig
+import org.koin.core.context.startKoin
+import org.koin.dsl.module
+
+fun initKoin() {
+    startKoin {
+        modules(
+            // Tu configuración
+            module {
+                single<LoggerConfig> { MyAppLoggerConfig() }
+            },
+            // Módulos del logger
+            *LoggerModule.getModules().toTypedArray()
+        )
+    }
+}
+```
+
+### 3. Inicializar en tu app
 
 #### Android
 
 ```kotlin
-// En tu Application class
 class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
-
-        // Inicializar Firebase
-        FirebaseApp.initializeApp(this)
+        initKoin()
     }
-}
-```
-
-```kotlin
-// build.gradle.kts (app level)
-plugins {
-    id("com.google.gms.google-services") version "4.4.0"
-    id("com.google.firebase.crashlytics") version "2.9.9"
 }
 ```
 
 #### iOS
 
 ```swift
-// En tu AppDelegate o @main App
-import FirebaseCore
+import shared // Tu módulo KMM
 
 @main
 struct MyApp: App {
     init() {
-        FirebaseApp.configure()
+        KoinKt.initKoin()
     }
 
     var body: some Scene {
@@ -116,294 +170,372 @@ struct MyApp: App {
 }
 ```
 
-## Configuración
+---
 
-### 1. Implementar LoggerConfig
+## 🚀 Uso
 
-Crea tu propia configuración implementando `LoggerConfig`:
+### Tags automáticos
+
+La forma más simple. El tag se genera automáticamente con el formato `Archivo.kt:línea`:
 
 ```kotlin
-// En tu app
-import cl.baldomeronapoli.kmm.logger.config.LoggerConfig
-import cl.baldomeronapoli.kmm.logger.config.LogLevel
-import com.google.firebase.crashlytics.FirebaseCrashlytics // Solo Android
+Trace.v("Información muy detallada")
+Trace.d("Debug info")
+Trace.i("Usuario inició sesión")
+Trace.w("Cache cerca del límite")
+Trace.e("Error al cargar datos")
+Trace.wtf("Error crítico que nunca debería pasar")
+```
 
-class MyAppLoggerConfig : LoggerConfig {
-    override val enableNapier: Boolean = true
+**Resultado en logcat:**
+```
+MainActivity.kt:42 - Usuario inició sesión
+PaymentViewModel.kt:156 - Error al cargar datos
+```
 
-    // Solo habilita Crashlytics si Firebase está disponible
-    override val enableCrashlytics: Boolean = false  // Cambia a true cuando tengas Firebase inicializado
+### Tags manuales
 
-    // Proporciona la instancia solo si vas a usar Crashlytics
-    override val crashlytics: Any? = try {
-        // Descomenta esto cuando tengas Firebase inicializado:
-        // FirebaseCrashlytics.getInstance()
-        null
-    } catch (e: Exception) {
-        null
-    }
+Si prefieres especificar el tag manualmente:
 
-    override val minLogLevel: LogLevel = if (BuildConfig.DEBUG) {
+```kotlin
+Trace.v("NetworkLayer", "Request headers enviados")
+Trace.d("MainActivity", "onCreate llamado")
+Trace.i("AuthFlow", "Token renovado exitosamente")
+Trace.w("CacheManager", "Cache en 90% de capacidad")
+Trace.e("PaymentService", "Tarjeta rechazada")
+Trace.wtf("DatabaseManager", "Corrupción detectada en BD")
+```
+
+### Con excepciones
+
+Puedes agregar una excepción como tercer parámetro:
+
+```kotlin
+try {
+    paymentService.process()
+} catch (e: Exception) {
+    // Tag automático + excepción
+    Trace.e("Error procesando pago", e)
+
+    // Tag manual + excepción
+    Trace.e("PaymentFlow", "Error procesando pago de \$100", e)
+}
+```
+
+### Crash automático
+
+Para crashes o excepciones no manejadas, usa `crash()` que auto-extrae toda la información:
+
+```kotlin
+try {
+    criticalOperation()
+} catch (e: Exception) {
+    // Auto-extrae: tag, mensaje y stack trace
+    Trace.crash(e)
+}
+```
+
+---
+
+## 📊 Niveles de Log
+
+| Método | Nivel | Uso típico |
+|--------|-------|------------|
+| `v()` | VERBOSE | Información muy detallada, debugging profundo |
+| `d()` | DEBUG | Información de depuración durante desarrollo |
+| `i()` | INFO | Información general sobre el flujo de la app |
+| `w()` | WARNING | Advertencias que no son errores |
+| `e()` | ERROR | Errores que afectan funcionalidad |
+| `wtf()` | FATAL | Errores críticos que pueden causar crash |
+| `crash()` | ERROR | Crashes/excepciones no manejadas |
+
+---
+
+## 🎛️ Configuración avanzada
+
+### Entorno de desarrollo
+
+```kotlin
+class DevLoggerConfig : LoggerConfig {
+    override val enableNapier: Boolean = true          // Logs en consola
+    override val enableCrashlytics: Boolean = false    // No enviar a Crashlytics
+    override val minLogLevel: LogLevel = LogLevel.VERBOSE  // Todos los logs
+}
+```
+
+### Entorno de producción
+
+```kotlin
+class ProdLoggerConfig : LoggerConfig {
+    override val enableNapier: Boolean = false         // Sin logs en consola
+    override val enableCrashlytics: Boolean = true     // Enviar a Crashlytics
+    override val minLogLevel: LogLevel = LogLevel.ERROR   // Solo errores
+    override val crashlyticsMinLevel: LogLevel = LogLevel.FATAL  // Solo críticos
+
+    override val crashlytics: Any? = FirebaseCrashlytics.getInstance()
+}
+```
+
+### Configuración dinámica según build type
+
+```kotlin
+class SmartLoggerConfig(private val isDebug: Boolean) : LoggerConfig {
+    override val enableNapier: Boolean = isDebug
+    override val enableCrashlytics: Boolean = !isDebug
+
+    override val minLogLevel: LogLevel = if (isDebug) {
         LogLevel.DEBUG
     } else {
         LogLevel.INFO
     }
 
-    override val crashlyticsMinLevel: LogLevel = LogLevel.ERROR
-}
-```
-
-### 2. Configurar Koin
-
-#### Opción A: Usando FeatureManager (Recomendado)
-
-```kotlin
-import cl.baldomeronapoli.kmm.base.di.initKoin
-import cl.baldomeronapoli.kmm.logger.LoggerFeature
-import cl.baldomeronapoli.kmm.logger.config.LoggerConfig
-
-fun initializeApp() {
-    initKoin(
-        appModule = module {
-            // Proveer tu configuración
-            single<LoggerConfig> { MyAppLoggerConfig() }
-        },
-        features = listOf(
-            LoggerFeature(enableDebugAntilog = true),
-            // ... otros features
-        )
-    )
-}
-```
-
-#### Opción B: Koin tradicional
-
-```kotlin
-import cl.baldomeronapoli.kmm.logger.di.loggerModule
-import cl.baldomeronapoli.kmm.logger.config.LoggerConfig
-import io.github.aakira.napier.DebugAntilog
-import io.github.aakira.napier.Napier
-import org.koin.core.context.startKoin
-
-fun initializeApp() {
-    // Inicializar Napier manualmente
-    Napier.base(DebugAntilog())
-
-    startKoin {
-        modules(
-            module {
-                single<LoggerConfig> { MyAppLoggerConfig() }
-            },
-            loggerModule
-        )
+    override val crashlytics: Any? = if (!isDebug) {
+        FirebaseCrashlytics.getInstance()
+    } else {
+        null
     }
 }
 ```
 
-## Uso
+---
 
-### Auto-logging (Captura automática de excepciones)
+## 🔥 Firebase Crashlytics (Opcional)
 
-El logger se integra automáticamente con `ExceptionHandler` de `napoli-kmm-base`. Todas las excepciones no manejadas en tus UseCases serán enviadas a `LoggingRepository.logException()`.
+Si quieres enviar logs a Firebase Crashlytics:
+
+### 1. Configurar Firebase
+
+#### Android
 
 ```kotlin
-class MyUseCase(
-    private val repository: MyRepository
-) : UseCase<MyInput, MyOutput> {
+// build.gradle.kts (project level)
+plugins {
+    id("com.google.gms.google-services") version "4.4.0" apply false
+    id("com.google.firebase.crashlytics") version "3.0.2" apply false
+}
 
-    override suspend fun execute(input: MyInput): MyOutput {
-        // Si lanza excepción, ExceptionHandler la captura automáticamente
-        // y llama a LoggingRepository.logException()
-        return repository.getData(input)
+// build.gradle.kts (app level)
+plugins {
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+}
+
+dependencies {
+    implementation(libs.firebase.crashlytics)
+}
+```
+
+```kotlin
+// Application class
+class MyApp : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        FirebaseApp.initializeApp(this)  // Antes de initKoin()
+        initKoin()
     }
 }
 ```
 
-### Manual logging
+#### iOS
 
-Inyecta `LoggingRepository` donde lo necesites:
+```swift
+// En tu @main App
+import FirebaseCore
 
-```kotlin
-class MyViewModel(
-    private val loggingRepository: LoggingRepository
-) : ViewModel() {
-
-    fun loadData() {
-        // Usando LoggingRepositoryImpl con métodos de conveniencia
-        val logger = loggingRepository as? LoggingRepositoryImpl
-
-        logger?.d("MyViewModel", "Loading data...")
-
-        try {
-            // Tu lógica
-            logger?.i("MyViewModel", "Data loaded successfully")
-        } catch (e: Exception) {
-            logger?.e("MyViewModel", "Failed to load data", e)
-        }
-    }
-
-    // O usando el método estándar
-    suspend fun logError(error: Throwable) {
-        loggingRepository.logException(error)
+@main
+struct MyApp: App {
+    init() {
+        FirebaseApp.configure()  // Antes de initKoin()
+        KoinKt.initKoin()
     }
 }
 ```
 
-### Métodos disponibles
-
-```kotlin
-val logger = loggingRepository as LoggingRepositoryImpl
-
-// Niveles de log
-logger.d(tag = "TAG", message = "Debug message")
-logger.i(tag = "TAG", message = "Info message")
-logger.w(tag = "TAG", message = "Warning message")
-logger.e(tag = "TAG", message = "Error message", throwable = exception)
-logger.wtf(tag = "TAG", message = "Fatal error", throwable = exception)
-
-// Genérico
-logger.log(
-    level = LogLevel.ERROR,
-    tag = "TAG",
-    message = "Custom message",
-    throwable = exception
-)
-
-// Desde la interfaz (suspendible)
-loggingRepository.logException(throwable)
-```
-
-## Configuración avanzada
-
-### Niveles de log personalizados
-
-```kotlin
-class ProductionLoggerConfig : LoggerConfig {
-    // Solo logs de ERROR o superior en producción
-    override val minLogLevel: LogLevel = LogLevel.ERROR
-
-    // Crashlytics solo recibe FATAL
-    override val crashlyticsMinLevel: LogLevel = LogLevel.FATAL
-
-    // Deshabilitar Napier en producción
-    override val enableNapier: Boolean = false
-
-    // Solo Crashlytics en producción
-    override val enableCrashlytics: Boolean = true
-}
-```
-
-### Solo Napier (sin Crashlytics)
-
-```kotlin
-class SimpleLoggerConfig : LoggerConfig {
-    override val enableNapier: Boolean = true
-    override val enableCrashlytics: Boolean = false
-    override val crashlytics: Any? = null
-    override val minLogLevel: LogLevel = LogLevel.DEBUG
-}
-```
-
-### Deshabilitar todo logging
-
-```kotlin
-class NoLoggerConfig : LoggerConfig {
-    override val enableNapier: Boolean = false
-    override val enableCrashlytics: Boolean = false
-    override val minLogLevel: LogLevel = LogLevel.FATAL
-}
-```
-
-## Arquitectura
-
-### Writer System
-
-La librería usa un sistema de "writers" pluggables:
-
-- **NapierLogWriter**: Escribe a consola usando Napier (de base)
-- **CrashlyticsLogWriter**: Envía logs a Firebase Crashlytics
-  - Android: Totalmente implementado con Firebase Crashlytics
-  - iOS: TODO - Por implementar
-
-### Flujo de datos
-
-```
-App → LoggingRepository → LoggingRepositoryImpl → [Writers]
-                                                   ├─ NapierLogWriter → Consola
-                                                   └─ CrashlyticsLogWriter → Firebase
-```
-
-### Filtrado de logs
-
-1. **Nivel mínimo global** (`minLogLevel`): Filtra antes de enviar a writers
-2. **Nivel mínimo por writer** (ej. `crashlyticsMinLevel`): Filtra dentro del writer específico
-3. **Enable/Disable**: Cada writer puede estar habilitado/deshabilitado
-
-## Troubleshooting
-
-### NoClassDefFoundError: FirebaseCrashlytics
-
-**Causa**: Tienes `enableCrashlytics = true` pero Firebase Crashlytics no está en tu classpath o no está inicializado.
-
-**Solución**:
-
-**Opción 1** - Deshabilitar Crashlytics (si no lo necesitas):
-```kotlin
-class MyAppLoggerConfig : LoggerConfig {
-    override val enableCrashlytics: Boolean = false  // ← Cambia a false
-    override val crashlytics: Any? = null
-}
-```
-
-**Opción 2** - Habilitar Firebase correctamente:
-1. Agrega Firebase a tu app (ver sección "Inicializar Firebase")
-2. Asegúrate de inicializar Firebase ANTES de Koin
-3. Proporciona la instancia en tu config:
+### 2. Habilitar en LoggerConfig
 
 ```kotlin
 class MyAppLoggerConfig : LoggerConfig {
     override val enableCrashlytics: Boolean = true
     override val crashlytics: Any? = FirebaseCrashlytics.getInstance()
+    override val crashlyticsMinLevel: LogLevel = LogLevel.ERROR
 }
 ```
 
-### "CrashlyticsLogWriter está habilitado pero no se proporcionó una instancia válida"
+---
 
-**Causa**: Intentas habilitar Crashlytics pero no pasaste `FirebaseCrashlytics.getInstance()`.
+## 🏗️ Arquitectura
 
-**Solución**:
-1. Asegúrate de inicializar Firebase en tu app antes de inicializar Koin
-2. Pasa la instancia correcta en tu `LoggerConfig`:
-
-```kotlin
-override val crashlytics: Any? = FirebaseCrashlytics.getInstance()
+```
+┌─────────────┐
+│    Trace    │  ← API pública
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────────┐
+│ LoggingRepository    │  ← Interfaz
+└──────────────────────┘
+       │
+       ▼
+┌──────────────────────┐
+│ LoggingRepositoryImpl│  ← Implementación
+└──────┬───────────────┘
+       │
+       ├─────────────────┬─────────────────┐
+       ▼                 ▼                 ▼
+┌─────────────┐  ┌──────────────┐  ┌──────────────┐
+│   Napier    │  │ Crashlytics  │  │  Custom...   │
+│ DataSource  │  │  DataSource  │  │  DataSource  │
+└─────────────┘  └──────────────┘  └──────────────┘
 ```
 
-### Los logs no aparecen en Crashlytics
+### Flujo de logs
+
+1. **Trace.i()** → Genera tag automático (opcional)
+2. **LoggingRepository** → Valida nivel mínimo
+3. **DataSources** → Envía a destinos habilitados
+   - NapierLogDataSource → Consola
+   - CrashlyticsLogDataSource → Firebase
+
+---
+
+## 🐛 Troubleshooting
+
+### Los logs no aparecen
+
+**Verifica:**
+1. Que `enableNapier = true` en tu `LoggerConfig`
+2. Que el nivel del log sea >= `minLogLevel`
+3. Que hayas inicializado Koin correctamente
+
+### Error: Unresolved reference 'Trace'
+
+**Solución:**
+```kotlin
+import cl.baldomeronapoli.kmm.logger.Trace
+```
+
+### Crashlytics no recibe logs
+
+**Verifica:**
+1. Firebase inicializado ANTES de Koin
+2. `enableCrashlytics = true` en tu config
+3. `crashlytics = FirebaseCrashlytics.getInstance()` proporcionado
+4. Nivel del log >= `crashlyticsMinLevel`
+5. Los logs pueden tardar minutos en aparecer en Firebase Console
+
+### NoClassDefFoundError: FirebaseCrashlytics
+
+**Causa**: Tienes `enableCrashlytics = true` pero Firebase no está en tu classpath.
 
 **Solución**:
-1. Verifica que Firebase esté correctamente inicializado
-2. Verifica que `enableCrashlytics = true` en tu config
-3. Verifica que el nivel del log sea >= `crashlyticsMinLevel`
-4. Los logs pueden tardar algunos minutos en aparecer en la consola de Firebase
+```kotlin
+override val enableCrashlytics: Boolean = false  // Deshabilitar
+// O instalar Firebase correctamente
+```
 
-### Logs duplicados
+---
 
-**Causa**: Napier y Crashlytics están ambos habilitados (comportamiento esperado).
+## 📝 Ejemplos completos
 
-**Solución**: Si solo quieres un destino, deshabilita el otro en tu `LoggerConfig`.
+### Ejemplo básico
 
-## Licencia
+```kotlin
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        Trace.i("Activity creada")
+
+        try {
+            loadData()
+        } catch (e: Exception) {
+            Trace.e("Error cargando datos", e)
+        }
+    }
+}
+```
+
+### En un ViewModel
+
+```kotlin
+class UserViewModel : ViewModel() {
+
+    fun login(email: String, password: String) {
+        Trace.d("LoginFlow", "Intento de login para: $email")
+
+        viewModelScope.launch {
+            try {
+                val user = authRepository.login(email, password)
+                Trace.i("LoginFlow", "Login exitoso: ${user.id}")
+            } catch (e: NetworkException) {
+                Trace.w("LoginFlow", "Error de red en login", e)
+            } catch (e: Exception) {
+                Trace.e("LoginFlow", "Error inesperado en login", e)
+            }
+        }
+    }
+}
+```
+
+### En un Repository
+
+```kotlin
+class PaymentRepository {
+
+    suspend fun processPayment(amount: Double): Result<Payment> {
+        Trace.d("PaymentRepo", "Procesando pago: $$amount")
+
+        return try {
+            val result = api.processPayment(amount)
+            Trace.i("PaymentRepo", "Pago exitoso: ${result.id}")
+            Result.success(result)
+        } catch (e: Exception) {
+            Trace.e("PaymentRepo", "Error procesando pago", e)
+            Result.failure(e)
+        }
+    }
+}
+```
+
+---
+
+## 🗺️ Roadmap
+
+- [x] Tags automáticos
+- [x] Soporte Android
+- [x] Soporte iOS
+- [x] Firebase Crashlytics (Android)
+- [ ] Firebase Crashlytics (iOS)
+- [ ] Custom DataSources (File, Sentry, etc.)
+- [ ] Log filtering por tag/pattern
+- [ ] Performance monitoring
+
+---
+
+## 📄 Licencia
 
 MIT License
 
-## Contribuir
+---
 
-Las contribuciones son bienvenidas. Por favor, abre un issue o PR en GitHub.
+## 🤝 Contribuir
 
-## Roadmap
+Las contribuciones son bienvenidas! Por favor:
 
-- [ ] Implementar CrashlyticsLogWriter para iOS
-- [ ] Agregar más writers (ej. File, Sentry, DataDog)
-- [ ] Soporte para filtros personalizados
-- [ ] Modo batch para optimizar envío a Crashlytics
+1. Fork el repositorio
+2. Crea una rama para tu feature (`git checkout -b feature/amazing-feature`)
+3. Commit tus cambios (`git commit -m 'Add amazing feature'`)
+4. Push a la rama (`git push origin feature/amazing-feature`)
+5. Abre un Pull Request
+
+---
+
+## 📧 Contacto
+
+Baldomero Napoli - [@elNapoli](https://github.com/elNapoli)
+
+Project Link: [https://github.com/elNapoli/napoli-kmm-logger](https://github.com/elNapoli/napoli-kmm-logger)
+
+---
+
+**Hecho con ❤️ usando Kotlin Multiplatform**

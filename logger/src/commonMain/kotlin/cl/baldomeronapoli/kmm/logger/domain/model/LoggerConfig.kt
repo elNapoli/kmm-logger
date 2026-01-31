@@ -1,7 +1,5 @@
 package cl.baldomeronapoli.kmm.logger.domain.model
 
-import cl.baldomeronapoli.kmm.logger.domain.model.LogLevel
-
 /**
  * Configuración para el sistema de logging.
  * La aplicación consumidora debe implementar esta interfaz y proveerla via DI.
@@ -21,7 +19,7 @@ interface LoggerConfig {
      * Habilitar logging via Napier (console/debug logs).
      * Recomendado: true en debug, false en release.
      */
-    val enableNapier: Boolean get() = true
+    val enableNapoliLogger: Boolean get() = true
 
     /**
      * Habilitar logging a Firebase Crashlytics (crash reporting).

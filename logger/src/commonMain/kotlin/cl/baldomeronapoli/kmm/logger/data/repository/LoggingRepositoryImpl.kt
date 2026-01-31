@@ -1,8 +1,8 @@
 package cl.baldomeronapoli.kmm.logger.data.repository
 
-import cl.baldomeronapoli.kmm.base.domain.repository.LoggingRepository
 import cl.baldomeronapoli.kmm.logger.data.datasource.LogDataSource
 import cl.baldomeronapoli.kmm.logger.domain.model.LogLevel
+import cl.baldomeronapoli.kmm.logger.domain.repository.LoggingRepository
 
 /**
  * Implementación del repositorio de logging siguiendo Clean Architecture.
@@ -17,14 +17,15 @@ class LoggingRepositoryImpl(
 ) : LoggingRepository {
 
     /**
-     * Loggea una excepción a todos los datasources habilitados.
-     * Usado automáticamente por ExceptionHandler en UseCases.
+     * Loggea un crash/excepción no manejada.
+     * Auto-extrae tag y mensaje del throwable.
+     * Usado automáticamente por ExceptionHandler en UseCases o manualmente con Trace.crash()
      */
-    override suspend fun logException(throwable: Throwable) {
+    override suspend fun crash(throwable: Throwable) {
         log(
             level = LogLevel.ERROR,
-            tag = throwable::class.simpleName ?: "Exception",
-            message = throwable.message ?: "Exception without message",
+            tag = throwable::class.simpleName ?: "Crash",
+            message = throwable.message ?: "Crash without message",
             throwable = throwable
         )
     }
@@ -61,14 +62,29 @@ class LoggingRepositoryImpl(
     }
 
     /**
-     * Métodos de conveniencia para logging manual
+     * Implementación de métodos de la interfaz LoggingRepository
      */
-    fun d(tag: String, message: String) = log(LogLevel.DEBUG, tag, message)
-    fun i(tag: String, message: String) = log(LogLevel.INFO, tag, message)
-    fun w(tag: String, message: String) = log(LogLevel.WARN, tag, message)
-    fun e(tag: String, message: String, throwable: Throwable? = null) =
-        log(LogLevel.ERROR, tag, message, throwable)
+    override suspend fun v(tag: String, message: String, throwable: Throwable?) {
+        log(LogLevel.VERBOSE, tag, message, throwable)
+    }
 
-    fun wtf(tag: String, message: String, throwable: Throwable? = null) =
+    override suspend fun d(tag: String, message: String, throwable: Throwable?) {
+        log(LogLevel.DEBUG, tag, message, throwable)
+    }
+
+    override suspend fun i(tag: String, message: String, throwable: Throwable?) {
+        log(LogLevel.INFO, tag, message, throwable)
+    }
+
+    override suspend fun w(tag: String, message: String, throwable: Throwable?) {
+        log(LogLevel.WARN, tag, message, throwable)
+    }
+
+    override suspend fun e(tag: String, message: String, throwable: Throwable?) {
+        log(LogLevel.ERROR, tag, message, throwable)
+    }
+
+    override suspend fun wtf(tag: String, message: String, throwable: Throwable?) {
         log(LogLevel.FATAL, tag, message, throwable)
+    }
 }
