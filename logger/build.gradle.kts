@@ -42,8 +42,7 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.napier)
-
+            // Napier eliminado - usando logging nativo
         }
 
         androidMain.dependencies {
@@ -58,7 +57,7 @@ kotlin {
 }
 
 android {
-    namespace = "cl.baldomeronapoli.kmm.logger"
+    namespace = "cl.baldomeronapoli.logger"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
@@ -116,7 +115,8 @@ publishing {
 afterEvaluate {
     publishing {
         publications.withType<MavenPublication> {
-            groupId = "cl.baldomeronapoli.kmm"
+            groupId = "cl.baldomeronapoli"
+            artifactId = "logger-kmp"
             version = versionProvider.get()
         }
     }
