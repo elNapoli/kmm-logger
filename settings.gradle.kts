@@ -29,4 +29,4 @@ dependencyResolutionManagement {
     }
 }
 
-include(":logger")
+include(":logger-kmp")

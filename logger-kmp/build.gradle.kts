@@ -116,7 +116,6 @@ afterEvaluate {
     publishing {
         publications.withType<MavenPublication> {
             groupId = "cl.baldomeronapoli"
-            artifactId = "logger-kmp"
             version = versionProvider.get()
         }
     }
