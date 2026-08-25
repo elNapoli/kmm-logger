@@ -514,7 +514,7 @@ class PaymentRepository {
 
 ## 📄 Licencia
 
-MIT License
+El Napoli
 
 ---
 
